@@ -1,0 +1,2 @@
+# Filazor
+Blazor File Explorer
