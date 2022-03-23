@@ -1,0 +1,142 @@
+﻿@page "/loginControl"
+@page "/loginControl/{warningText}"
+
+@using System.Web
+@using Filazor.Core.Data
+@using System.Security.Claims;
+@using Microsoft.AspNetCore.Authentication;
+@using Microsoft.AspNetCore.Authentication.Cookies;
+@using Microsoft.AspNetCore.Authorization;
+@using Microsoft.AspNetCore.Mvc;
+@using Microsoft.AspNetCore.Mvc.RazorPages;
+@using Microsoft.AspNetCore.Http
+
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@inject IHttpContextAccessor httpContextAccessor
+
+<AuthorizeView>
+    <Authorized>
+        <b>Hello, @context.User.Identity.Name!</b>
+    </Authorized>
+    <NotAuthorized>
+        <div class="container">
+            <div class="row">
+                <div class="col-sm-9 col-md-7 col-lg-5 mx-auto">
+                    <div class="card my-5">
+                        <div class="card-body">
+                            <h5 class="card-title text-center">Sign in to Filazor</h5>
+                            <form method="get" action="/login">
+                                    <div class="form-label-group">
+                                        <input type="text" id="inputID" name="paramUsername" class="form-control" placeholder="User ID" @bind="@userName" required autofocus>
+                                        <label for="inputID"></label>
+                                    </div>
+
+                                    <div class="form-label-group">
+                                        <input type="password" id="inputPassword" name="paramPassword" class="form-control" placeholder="Password" @bind="@password" required>
+                                        <label for="inputPassword"></label>
+                                    </div>
+
+                                    <button class="btn btn-primary btn-block" type="submit">Sign in</button>
+                                    @if (string.IsNullOrEmpty(warningText) == false)
+                                    {
+                                        <div class="alert alert-warning mt-3" role="alert">
+                                            @warningText
+                                        </div>
+                                    }
+                            </form>
+
+                            @*<EditForm Model="@loginModel" OnValidSubmit="TryToLogin" class="small" Context="formContext">
+                                <DataAnnotationsValidator />
+
+                                <div class="row align-items-center m-3">
+                                    <label for="inputID" class="font-weight-bold">User ID</label>
+                                    <InputText type="text" id="inputID" class="form-control" @bind-Value="@loginModel.UserID" />
+                                </div>
+
+                                <div class="row align-items-center m-3">
+                                    <label for="inputPassword" class="font-weight-bold">Password</label>
+                                    <InputText type="password" id="inputPassword" class="form-control" @bind-Value="@loginModel.Password" />
+                                </div>
+
+                                <div class="row align-items-center m-3">
+                                    <button type="submit" class="btn btn-primary btn-block">Sign in</button>
+                                </div>
+                            </EditForm>*@
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </NotAuthorized>
+</AuthorizeView>
+
+
+
+@code {
+    private string userName = null;
+    private string password = null;
+
+    private UserLoginModel loginModel = new UserLoginModel();
+
+
+    [Parameter]
+    public string warningText { get; set; }
+
+    private string encode(string param)
+    {
+        return HttpUtility.UrlEncode(param);
+    }
+
+    private async void TryToLogin()
+    {
+
+
+
+        //        try
+        //        {
+        //            // Clear the existing external cookie
+        //            await httpContextAccessor.HttpContext
+        //                .SignOutAsync(
+        //                CookieAuthenticationDefaults.AuthenticationScheme);
+        //        }
+        //        catch (Exception e) {
+        //            Console.WriteLine(e.Message);
+        //        }
+
+        //        string loginResult = LoginService.Login(loginModel.UserID, loginModel.Password);
+        //        if (string.IsNullOrEmpty(loginResult) == false)
+        //        {
+        //            NavigationManager.NavigateTo($"/loginControl/{ loginResult }");
+        //            return;
+        //        }
+
+        //        var claims = new List<Claim>
+        //{
+        //            new Claim(ClaimTypes.Name, loginModel.UserID),
+        //            new Claim(ClaimTypes.Role, "Administrators"),
+        //        };
+        //        var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+        //        var authProperties = new AuthenticationProperties
+        //        {
+        //            IsPersistent = true,
+        //            ExpiresUtc = DateTime.UtcNow.AddMinutes(30),
+        //            RedirectUri = "/main"
+        //        };
+
+        //        try
+        //        {
+        //            await httpContextAccessor.HttpContext.SignInAsync(
+        //            CookieAuthenticationDefaults.AuthenticationScheme,
+        //            new ClaimsPrincipal(claimsIdentity),
+        //            authProperties);
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            string error = ex.Message;
+        //            Console.WriteLine(error);
+        //        }
+
+        //        NavigationManager.NavigateTo("/");
+    }
+}

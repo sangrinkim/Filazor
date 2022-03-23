@@ -1,0 +1,276 @@
+﻿@using System.IO
+@inject IJSRuntime JSRuntime
+
+<style>
+    .material-icons {
+        font-size: 16px;
+    }
+
+    /* Dropdown Button */
+    .dropbtn {
+        background-color: transparent;
+        color: black;
+        font-size: 16px;
+        border: none;
+    }
+
+    .dropbtn:disabled {
+        color: silver;
+    }
+
+    /* Dropdown button on hover & focus */
+    .dropbtn:hover:enabled, .dropbtn:focus:enabled {
+        background-color: silver;
+        cursor: pointer;
+    }
+
+    /* The container div - needed to position the dropdown content */
+    .dropdown {
+        position: relative;
+        display: inline-block;
+    }
+
+    /* Dropdown Content (Hidden by Default) */
+    .dropdown-content {
+        display: none;
+        position: absolute;
+        background-color: #f1f1f1;
+        min-width: 160px;
+        box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+        z-index: 1;
+    }
+
+    /* Links inside the dropdown */
+    .dropdown-content li {
+        color: black;
+        font-size: 12px;
+        padding: 5px;
+        text-decoration: none;
+        display: block;
+    }
+
+    /* Change color of dropdown links on hover */
+    .dropdown-content li:hover {
+        background-color: lightskyblue;
+        color: black !important;
+    }
+
+    /* Show the dropdown menu (use JS to add this class to the .dropdown-content container when the user clicks on the dropdown button) */
+    .show {
+        display: block;
+    }
+
+    .selected-recent {
+        background-color: lightskyblue;
+    }
+</style>
+
+<div class="btn-toolbar py-1" role="toolbar">
+
+    <button type="button" class="btn btn-outline-secondary btn-sm mr-1" disabled="@disabledBackButton" @onclick="Back">
+        <i class="material-icons align-middle">
+            arrow_back
+        </i>
+    </button>
+    <button type="button" class="btn btn-outline-secondary btn-sm mr-1" disabled="@disabledForwardButton" @onclick="Forward">
+        <i class="material-icons align-middle">
+            arrow_forward
+        </i>
+    </button>
+    <div class="dropdown align-self-center mr-1">
+        <button @onclick="ShowRecentContent" class="dropbtn" disabled="@disabledRecentButton">
+            <i class="material-icons align-middle">
+                expand_more
+            </i>
+        </button>
+        <div id="recentLocations" class="dropdown-content @recentLocationShow" tabindex="1" @onfocusout="CloseRecentContent">
+            <ul class="p-1">
+                @for (int i = 0; i < selectedDirectoryList.Count; i++)
+                {
+                    var idx = i;
+                    string path = selectedDirectoryList[idx];
+
+                    string recentPath = null;
+                    if (string.IsNullOrEmpty(path))
+                    {
+                        recentPath = HostName;
+                    }
+                    else
+                    {
+                        DirectoryInfo directoryInfo = new DirectoryInfo(path);
+                        recentPath = @directoryInfo.Name;
+                    }
+
+                    @if (i == selectedDirectoryIndex)
+                    {
+                        <li class="selected-recent align-middle" @onclick="e => MoveToRecent(idx)">
+                            <i class="material-icons align-middle">check</i>
+                            @recentPath
+                        </li>
+                    }
+                    else
+                    {
+                        <li class="align-middle" @onclick="e => MoveToRecent(idx)">
+                            <i class="material-icons align-middle" style="color: transparent;">arrow_back</i>
+                            @recentPath
+                        </li>
+                    }
+                }
+            </ul>
+        </div>
+    </div>
+    <button type="button" class="btn btn-outline-secondary btn-sm mr-1" disabled="@disabledUpwardButton" @onclick="Upward">
+        <i class="material-icons align-middle">
+            arrow_upward
+        </i>
+    </button>
+
+</div>
+
+@code {
+
+    private bool disabledBackButton = true;
+    private bool disabledForwardButton = true;
+    private bool disabledUpwardButton = true;
+    private bool disabledRecentButton = true;
+
+    private bool isRecent = false;
+    private bool isBacking = false;
+    private bool isForwarding = false;
+
+    private List<string> selectedDirectoryList = new List<string>();
+    private int selectedDirectoryIndex;
+
+    private string recentLocationShow = null;
+
+    [Parameter]
+    public EventCallback<string> SelectedCallback { get; set; }
+
+    [Parameter]
+    public string HostName { get; set; }
+
+    [Parameter]
+    public string SelectedDirectory { get; set; }
+
+
+    // Before parameters are set
+    public override Task SetParametersAsync(ParameterView parameters)
+    {
+        //DebugPrint($"SetParametersAsync {SelectedDirectory}");
+
+        return base.SetParametersAsync(parameters);
+    }
+
+    protected override Task OnInitializedAsync()
+    {
+        //DebugPrint($"OnInitializedAsync {SelectedDirectory}");
+
+        return base.OnInitializedAsync();
+    }
+
+    protected override Task OnParametersSetAsync()
+    {
+        //DebugPrint($"OnParametersSetAsync {SelectedDirectory}");
+
+        if (isRecent)
+        {
+            isRecent = false;
+        }
+        else if (isBacking)
+        {
+            isBacking = false;
+        }
+        else if (isForwarding)
+        {
+            isForwarding = false;
+        }
+        else if (selectedDirectoryList.Count == 0
+            || selectedDirectoryList[0] != SelectedDirectory)
+        {
+            selectedDirectoryList.Insert(0, SelectedDirectory);
+            selectedDirectoryIndex = 0;
+            //DebugPrint($"Added {SelectedDirectory}");
+        }
+
+        //DebugPrint($"Selected Index {selectedDirectoryIndex}");
+        SetButon();
+
+        return base.OnParametersSetAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            //DebugPrint($"OnAfterRenderAsync firstRender {SelectedDirectory}");
+        }
+
+        if (recentLocationShow != null)
+        {
+            await JSRuntime.InvokeVoidAsync("commonFunctions.focusElement", "recentLocations");
+        }
+    }
+
+    private void SetButon()
+    {
+        //DebugPrint($"SelectedDirectoryList Count : {selectedDirectoryList.Count}");
+        //DebugPrint($"selectedDirectoryList[selectedDirectoryIndex] : {selectedDirectoryList[selectedDirectoryIndex]}");
+        disabledBackButton = selectedDirectoryList.Count <= 1 | selectedDirectoryIndex + 1 == selectedDirectoryList.Count;
+        disabledForwardButton = selectedDirectoryList.Count <= 1 | selectedDirectoryIndex == 0;
+        disabledUpwardButton = selectedDirectoryList.Count <= 1 | string.IsNullOrEmpty(selectedDirectoryList[selectedDirectoryIndex]);
+        disabledRecentButton = selectedDirectoryList.Count <= 1;
+    }
+
+    private void ShowRecentContent()
+    {
+        recentLocationShow = "show";
+    }
+
+    private void CloseRecentContent()
+    {
+        recentLocationShow = null;
+    }
+
+    /// <summary>
+    /// Move to selected recent node
+    /// </summary>
+    /// <param name="path">selected node Path</param>
+    private async void MoveToRecent(int idx)
+    {
+        isRecent = true;
+        recentLocationShow = null;
+        selectedDirectoryIndex = idx;
+
+        await SelectedCallback.InvokeAsync(selectedDirectoryList[idx]);
+    }
+
+    private async void Back()
+    {
+        isBacking = true;
+        selectedDirectoryIndex = selectedDirectoryIndex + 1;
+
+        await SelectedCallback.InvokeAsync(selectedDirectoryList[selectedDirectoryIndex]);
+    }
+
+    private async void Forward()
+    {
+        isForwarding = true;
+        selectedDirectoryIndex = selectedDirectoryIndex - 1;
+
+        await SelectedCallback.InvokeAsync(selectedDirectoryList[selectedDirectoryIndex]);
+    }
+
+    private async void Upward()
+    {
+        var dirInfo = new DirectoryInfo(selectedDirectoryList[selectedDirectoryIndex]);
+
+        if (dirInfo.Parent == null)
+        {
+            await SelectedCallback.InvokeAsync(string.Empty);
+        }
+        else
+        {
+            await SelectedCallback.InvokeAsync(dirInfo.Parent.FullName);
+        }
+    }
+}

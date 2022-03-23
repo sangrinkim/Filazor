@@ -1,0 +1,117 @@
+﻿@using Filazor.Core.Data
+
+@inject FileSystemService FSService
+
+
+@if (childDirectoryDic.Count > 0)
+{
+    <span class="@selected" style="display: block;" @onclick="SelectedNode" @ondblclick="ExpandNode">
+        <span class="caret @caretDirection" @onclick="ExpandNode"></span>
+        <i class="material-icons align-middle" style="font-size: 18px; color: @iconColor;">
+            @iconText
+        </i>
+        <small>@nodeText</small>
+    </span>
+
+    @if (isExpanded)
+    {
+        <ul class="nested @showChild">
+            @foreach (var dirInfo in childDirectoryDic)
+            {
+                <li>
+                    <FSTreeNode IsDrive=false
+                                TargetRootDirectoryInfo=@dirInfo.Value
+                                OnClickCallback="@OnClickCallback" />
+                </li>
+            }
+        </ul>
+    }
+}
+else
+{
+    <span class="@selected" style="display: block;" @onclick="SelectedNode">
+        <span style="width: 11px; display: inline-block;"></span>
+        <i class="material-icons align-middle" style="font-size: 18px; color: @iconColor;">
+            @iconText
+        </i>
+        <small>@nodeText</small>
+    </span>
+}
+
+
+@code {
+
+    private string showChild;
+    private string caretDirection;
+    private string selected;
+    private bool isExpanded;
+    private string nodeText;
+    private string iconText;
+    private string iconColor;
+
+    private Dictionary<string, System.IO.DirectoryInfo> childDirectoryDic = new Dictionary<string, System.IO.DirectoryInfo>();
+
+    [Parameter]
+    public bool IsDrive { get; set; }
+
+    [Parameter]
+    public string DriveVolumeLabel { get; set; }
+
+    [Parameter]
+    public System.IO.DirectoryInfo TargetRootDirectoryInfo { get; set; }
+
+    [Parameter]
+    public EventCallback<FSTreeNode> OnClickCallback { get; set; }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (IsDrive)
+        {
+            nodeText = $"{DriveVolumeLabel} ({TargetRootDirectoryInfo.Name})";
+            iconText = "storage";
+            iconColor = "dimgray";
+        }
+        else
+        {
+            nodeText = TargetRootDirectoryInfo.Name;
+            iconText = "folder";
+            iconColor = "gold";
+        }
+
+        await GetChildDirectoryList();
+    }
+
+
+    private async Task GetChildDirectoryList()
+    {
+        var dirInfos = await FSService.GetDirectoryInfos(TargetRootDirectoryInfo.FullName);
+        if (dirInfos == null) return;
+
+        foreach (var dirInfo in dirInfos)
+        {
+            childDirectoryDic.Add(dirInfo.Name, dirInfo);
+        }
+    }
+
+    private async void SelectedNode()
+    {
+        await OnClickCallback.InvokeAsync(this);
+
+        selected = "item-selected";
+    }
+
+    private void ExpandNode()
+    {
+        caretDirection = string.IsNullOrEmpty(caretDirection) ? "caret-down" : "";
+        showChild = string.IsNullOrEmpty(showChild) ? "active" : "";
+        selected = "item-selected";
+
+        isExpanded = !isExpanded;
+    }
+
+    public void SetDefaultStyle()
+    {
+        selected = null;
+    }
+}

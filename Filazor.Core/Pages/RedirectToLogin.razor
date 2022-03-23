@@ -1,0 +1,27 @@
+﻿@inject NavigationManager NavigationManager
+
+
+@code {        
+    protected override void OnInitialized()
+    {
+
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        try
+        {
+            //
+            // Fixed NavigationError on NavigateTo
+            // https://stackoverflow.com/questions/58076758/navigationerror-on-navigateto
+            //
+            NavigationManager.NavigateTo("/loginControl", true);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.Message);
+        }
+
+        base.OnAfterRender(firstRender);
+    }
+}

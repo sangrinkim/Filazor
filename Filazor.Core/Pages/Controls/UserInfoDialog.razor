@@ -1,0 +1,148 @@
+﻿@using Filazor.Core.Controller
+@using Filazor.Core.Data
+
+
+<div class="modal @modalClass" tabindex="-1" role="dialog" style="display:@modalDisplay">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">User Info</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" @onclick="OnDialogClosed">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group row align-items-center">
+                    <label for="textUserID" class="col-sm-5 col-form-label"><small>User ID:</small></label>
+                    <div class="col-sm-7 m-0 p-0">
+                        <input type="text" readonly class="form-control-plaintext small" id="textUserID" placeholder="User ID" value="@CurrentUser.UserName" />
+                    </div>
+                </div>
+                <div class="form-group row align-items-center">
+                    <label for="textRole" class="col-sm-5 col-form-label"><small>Role:</small></label>
+                    <div class="col-sm-7 m-0 p-0">
+                        <input type="text" readonly class="form-control-plaintext small" id="textRole" placeholder="Role" value="@CurrentUser.Role" />
+                    </div>
+                </div>
+
+                <EditForm Model="@passwordModel" OnValidSubmit="ChangePassword">
+                    <DataAnnotationsValidator />
+
+                    <div class="row align-items-center">
+                        <label for="inputCurrentPassword" class="col-sm-5 col-form-label"><small>Current Password:</small></label>
+                        <div class="col-sm-7 m-0 p-0">
+                            <InputText type="password" id="inputCurrentPassword" class="small" placeholder="Current Password" @bind-Value="@passwordModel.CurrentPassword" />
+                        </div>
+                    </div>
+                    <small><ValidationMessage For="(() => passwordModel.CurrentPassword)" /></small>
+                    <div class="row align-items-center">
+                        <label for="inputNewPassword" class="col-sm-5 col-form-label"><small>New Password:</small></label>
+                        <div class="col-sm-7 m-0 p-0">
+                            <InputText type="password" id="inputNewPassword" class="small" placeholder="New Password" @bind-Value="@passwordModel.NewPassword" />
+                        </div>
+                    </div>
+                    <small><ValidationMessage For="(() => passwordModel.NewPassword)" /></small>
+                    <div class="row align-items-center">
+                        <label for="inputConfirmNewPassword" class="col-sm-5 col-form-label"><small>Confirm New Password:</small></label>
+                        <div class="col-sm-7 m-0 p-0">
+                            <InputText type="password" id="inputConfirmNewPassword" class="small" placeholder="Confirm New Password" @bind-Value="@passwordModel.ConfirmNewPassword" />
+                        </div>
+                    </div>
+                    <small><ValidationMessage For="(() => passwordModel.ConfirmNewPassword)" /></small>
+                    <div class="row align-items-center mt-2">
+                        <div class="col-sm-5">
+
+                        </div>
+                        <div class="col-sm-7 m-0 p-0">
+                            <button type="submit" class="btn btn-outline-primary btn-sm small">Change Password</button>
+                        </div>
+                    </div>
+                </EditForm>
+            </div>
+            @if (changedPasswordResult != string.Empty)
+            {
+                @if (changedPasswordResult == null)
+                {
+                    <div class="alert alert-success" role="alert">
+                        "Password changed successfully!"
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-warning" role="alert">
+                        @changedPasswordResult
+                    </div>
+                }
+            }
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary btn-sm" data-dismiss="modal" @onclick="OnDialogClosed">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (show)
+{
+    <div class="modal-backdrop fade show"></div>
+}
+
+@code {
+    private string modalClass;
+    private string modalDisplay = "none;";
+    private bool show;
+    private PasswordModel passwordModel = new PasswordModel();
+    private string changedPasswordResult = string.Empty;
+
+    [Parameter]
+    public bool Show
+    {
+        set
+        {
+            show = value;
+            if (value)
+            {
+                modalClass = "show";
+                modalDisplay = "block;";
+            }
+            else
+            {
+                modalClass = string.Empty;
+                modalDisplay = "none;";
+            }
+        }
+    }
+
+    [Parameter]
+    public UserModel CurrentUser { get; set; }
+
+    [Parameter]
+    public EventCallback<string> UserInfoDialogResultReturned { get; set; }
+
+
+
+    private Task OnDialogClosed()
+    {
+        return UserInfoDialogResultReturned.InvokeAsync(null);
+    }
+
+    private void ChangePassword()
+    {
+        var isValid = CheckValidate(passwordModel);
+
+        if (isValid)
+        {
+            changedPasswordResult = LoginService.ChangePassword(CurrentUser.UserName, passwordModel);
+        }
+        else
+        {
+            changedPasswordResult = "Not matched new password and confirm new password.";
+        }
+    }
+
+    private bool CheckValidate(PasswordModel passwordModel)
+    {
+        var checksValid = passwordModel.NewPassword == passwordModel.ConfirmNewPassword;
+
+        return checksValid;
+    }
+}
