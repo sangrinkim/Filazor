@@ -2,7 +2,7 @@
 Blazor File Explorer
 
 IDE
-- Visual Studio 2019
+- Visual Studio 2022 (Build tested: 2022-03-24)
 
 Target framework
 - ASP.NET Core 3.1
