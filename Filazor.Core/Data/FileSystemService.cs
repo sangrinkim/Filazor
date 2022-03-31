@@ -11,6 +11,7 @@ namespace Filazor.Core.Data
     [Authorize(Roles = "Administrators")]
     public class FileSystemService
     {
+
         public Task<string> GetHostName()
         {
             return Task.Run(() =>
